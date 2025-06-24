@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon --exec ts-node index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "tailwind:init": "tailwindcss init -p"
   },
   "repository": {
     "type": "git",
@@ -20,13 +21,15 @@
   "homepage": "https://github.com/StaiLee/4-Eleven#readme",
   "dependencies": {
     "chokidar": "^4.0.3",
+    "cors": "^2.8.5",
     "express": "^5.1.0",
+    "react-router-dom": "^7.6.2",
     "socket.io": "^4.8.1",
     "watcher": "^2.3.1"
   },
   "devDependencies": {
-    "@types/express": "^5.0.1",
-    "@types/node": "^22.15.17",
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.15.32",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"

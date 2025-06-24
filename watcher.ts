@@ -1,4 +1,4 @@
-import chokidar from "chokidar";
+import chokidar, { FSWatcher } from "chokidar";
 import fs from "fs";
 import { Server } from "socket.io";
 
@@ -6,9 +6,14 @@ type FileMeta = {
   permissions: string;
 };
 
+type LogEvent =
+  | { type: "add" | "change" | "unlink"; path: string }
+  | { type: "permission-change"; path: string; oldPerm: string; newPerm: string }
+  | { type: "error"; path: string };
+
+let watcher: FSWatcher | null = null;
 const watchedFiles: Record<string, FileMeta> = {};
 
-// Lecture des métadonnées avec gestion d’erreur
 function getFileMeta(filePath: string): FileMeta {
   try {
     const stats = fs.statSync(filePath);
@@ -16,70 +21,62 @@ function getFileMeta(filePath: string): FileMeta {
       permissions: (stats.mode & 0o777).toString(8),
     };
   } catch (err) {
-    console.error("❌ Erreur getFileMeta:", filePath, err);
+    console.error("❌ Erreur lors de la lecture des permissions :", err);
     return { permissions: "000" };
   }
 }
 
-export function initWatcher(io: Server) {
-  // ✅ SURVEILLANCE D'UN DOSSIER, PAS D'UN FICHIER
-  const watchPath = "/home/waterjuice/Desktop";
+export function initWatcher(io: Server, watchPath: string): void {
+  if (watcher) {
+    watcher.close();
+  }
 
-  const watcher = chokidar.watch(watchPath, {
+  console.log("📂 Dossier surveillé :", watchPath);
+
+  watcher = chokidar.watch(watchPath, {
     persistent: true,
     ignoreInitial: false,
     depth: 5,
     awaitWriteFinish: true,
   });
 
-  console.log("🔍 Surveillance en cours sur :", watchPath);
-
   watcher
-    .on("add", (filePath) => {
+    .on("add", (filePath: string) => {
       const meta = getFileMeta(filePath);
       watchedFiles[filePath] = meta;
 
-      console.log("📄 Fichier ajouté :", filePath, "→ Permissions :", meta.permissions);
-
-      io.emit("log", {
-        type: "add",
-        path: filePath,
-        permissions: meta.permissions,
-      });
+      const log: LogEvent = { type: "add", path: filePath };
+      io.emit("log", log);
     })
 
-    .on("change", (filePath) => {
-      const old = watchedFiles[filePath];
-      const meta = getFileMeta(filePath);
-      watchedFiles[filePath] = meta;
+    .on("change", (filePath: string) => {
+      const oldMeta = watchedFiles[filePath];
+      const newMeta = getFileMeta(filePath);
+      watchedFiles[filePath] = newMeta;
 
-      if (old && old.permissions !== meta.permissions) {
-        console.log("🛡️ Permissions changées :", filePath, old.permissions, "→", meta.permissions);
-        io.emit("log", {
+      if (oldMeta && oldMeta.permissions !== newMeta.permissions) {
+        const log: LogEvent = {
           type: "permission-change",
           path: filePath,
-          oldPerm: old.permissions,
-          newPerm: meta.permissions,
-        });
+          oldPerm: oldMeta.permissions,
+          newPerm: newMeta.permissions,
+        };
+        io.emit("log", log);
       } else {
-        console.log("✏️ Fichier modifié :", filePath);
-        io.emit("log", {
-          type: "change",
-          path: filePath,
-        });
+        const log: LogEvent = { type: "change", path: filePath };
+        io.emit("log", log);
       }
     })
 
-    .on("unlink", (filePath) => {
+    .on("unlink", (filePath: string) => {
       delete watchedFiles[filePath];
-      console.log("🗑️ Fichier supprimé :", filePath);
-      io.emit("log", {
-        type: "unlink",
-        path: filePath,
-      });
+      const log: LogEvent = { type: "unlink", path: filePath };
+      io.emit("log", log);
     })
 
-    .on("error", (error) => {
-      console.error("🚨 Erreur de Chokidar :", error);
+    .on("error", (err: unknown) => {
+      const error = err as Error;
+      const log: LogEvent = { type: "error", path: error.message };
+      io.emit("log", log);
     });
 }
