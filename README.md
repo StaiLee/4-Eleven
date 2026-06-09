@@ -1,3 +1,13 @@
+<p align="center">
+  <img src="./assets/banner.svg" alt="4-Eleven" width="100%"/>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/github/languages/top/StaiLee/4-Eleven?style=for-the-badge&color=2ee6a6&logoColor=white" alt="badge"/>
+  <img src="https://img.shields.io/github/license/StaiLee/4-Eleven?style=for-the-badge&color=684A95&label=LICENSE" alt="badge"/>
+  <img src="https://img.shields.io/github/stars/StaiLee/4-Eleven?style=for-the-badge&logo=github&color=e3b341&label=STARS" alt="badge"/>
+</p>
+
 # 📁 4-Eleven – Surveillance de fichiers en temps réel
 
 **4-Eleven** est une application de démonstration de sécurité, permettant de **surveiller en temps réel un dossier** sur un système Linux (ex : Kali) et de visualiser tous les changements effectués (création, modification, suppression, changement de permissions, etc.) via une interface web moderne.
